@@ -29,7 +29,7 @@ if (isset($_POST['login'])) {
                 exit;
             }
         } else {
-            $error = "Password salah!";
+            $error = "Password yang Anda masukkan salah!";
         }
     } else {
         $error = "Username tidak ditemukan!";
@@ -42,8 +42,7 @@ if (isset($_POST['login'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Pondok Pesantren Tajalliddin</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <title>Login - PP. Tajalliddin</title>
     <style>
         * {
             box-sizing: border-box;
@@ -51,120 +50,186 @@ if (isset($_POST['login'])) {
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         body {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background-color: #e8edf2; /* Menyesuaikan latar belakang dashboard admin */
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            padding: 15px;
         }
+
+        /* Kartu Utama Login */
         .login-card {
+            width: 900px;
+            max-width: 100%;
+            min-height: 500px;
             background: #ffffff;
-            padding: 40px 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 380px;
-            text-align: center;
-        }
-        .logo-container {
-            width: 70px;
-            height: 70px;
-            background: #1e3c72;
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
+            border-radius: 24px;
             display: flex;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        /* Sisi Kiri: Form Login (Berlatar Belakang Warna Utama) */
+        .form-side {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: linear-gradient(135deg, #021024 0%, #052659 100%);
+            color: #ffffff;
+        }
+
+        .form-side h2 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .form-side p.subtitle {
+            font-size: 13px;
+            color: #90cdf4;
+            margin-bottom: 24px;
+            line-height: 1.4;
+        }
+
+        .alert-box {
+            background: rgba(229, 62, 62, 0.2);
+            color: #fed7d7;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-bottom: 16px;
+            border-left: 4px solid #f56565;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 28px;
+            font-size: 14px;
+            color: #ffffff;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-group input::placeholder {
+            color: #a0aec0;
+        }
+
+        .input-group input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #00b4d8;
+            box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.2);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: #00b4d8;
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            border-radius: 28px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            margin-top: 5px;
+            box-shadow: 0 6px 15px rgba(0, 180, 216, 0.3);
+        }
+
+        .btn-submit:hover {
+            background: #0077b6;
+            transform: translateY(-1px);
+        }
+
+        /* Sisi Kanan: Logo & Identitas Pesantren (Berlatar Putih Bersih) */
+        .visual-side {
+            flex: 1;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            border-radius: 50%;
-            margin: 0 auto 15px auto;
-            box-shadow: 0 4px 10px rgba(30,60,114,0.3);
+            padding: 40px;
+            text-align: center;
+            color: #2d3748;
         }
-        .login-card h2 {
-            color: #333;
-            font-size: 22px;
-            margin-bottom: 5px;
-        }
-        .login-card p {
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 25px;
-        }
-        .alert {
-            background: #ffe6e6;
-            color: #d9534f;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 13px;
+
+        .visual-side img {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
             margin-bottom: 15px;
         }
-        .form-group {
-            text-align: left;
-            margin-bottom: 15px;
+
+        .visual-side h3 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1a365d;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
+
+        .visual-side p {
+            font-size: 12px;
+            color: #718096;
+            line-height: 1.5;
             font-weight: 600;
-            font-size: 13px;
-            color: #444;
         }
-        .form-group input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-        .form-group input:focus {
-            border-color: #1e3c72;
-            outline: none;
-        }
-        .btn-login {
-            width: 100%;
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 10px;
-        }
-        .btn-login:hover {
-            background: #218838;
+
+        /* Responsif untuk Tampilan HP */
+        @media (max-width: 768px) {
+            .login-card {
+                flex-direction: column-reverse; /* Di HP, bagian logo di atas atau form di atas sesuai selera */
+                height: auto;
+            }
+            .form-side, .visual-side {
+                padding: 30px 20px;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="login-card">
-        <!-- Logo Pondok Pesantren Tajalliddin -->
-        <div class="logo-container" style="background: transparent; box-shadow: none; width: 90px; height: 90px; margin: 0 auto 15px auto;">
-            <img src="assets/img/logo.png" alt="Logo Tajalliddin" style="width: 100%; height: 100%; object-fit: contain;">
-        </div>
-        
-        <h2>PP. Tajalliddin</h2>
-        <p>Sistem Informasi Akademik & Keuangan</p>
-        
-        <?php if ($error): ?>
-            <div class="alert"><?= $error; ?></div>
-        <?php endif; ?>
+        <!-- Sisi Kiri: Form Login -->
+        <div class="form-side">
+            <h2>Selamat Datang</h2>
+            <p class="subtitle">Masuk ke Sistem Akademik & Keuangan</p>
 
-        <form action="" method="POST">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" placeholder="Masukkan username..." required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Masukkan password..." required>
-            </div>
-            <button type="submit" name="login" class="btn-login">Masuk Sistem</button>
-        </form>
+            <?php if ($error): ?>
+                <div class="alert-box"><?= $error; ?></div>
+            <?php endif; ?>
+
+            <form action="" method="POST">
+                <div class="input-group">
+                    <input type="text" name="username" placeholder="Username..." required autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <input type="password" name="password" placeholder="Password..." required>
+                </div>
+                <button type="submit" name="login" class="btn-submit">Masuk Sistem</button>
+            </form>
+        </div>
+
+        <!-- Sisi Kanan: Logo & Identitas Pesantren -->
+        <div class="visual-side">
+            <img src="assets/img/logo.png" alt="Logo Tajalliddin">
+            <h3>PP. TAJALLIDDIN</h3>
+            <p>Sistem Informasi Akademik & Keuangan<br>Kp. Sinar Jaya Samarang - Garut</p>
+        </div>
     </div>
 
 </body>
