@@ -12,23 +12,70 @@ $error = '';
 
 // Proses Tambah Santri Manual
 if (isset($_POST['tambah_santri'])) {
-    $nis = mysqli_real_escape_string($koneksi, $_POST['nis']);
-    $nama = mysqli_real_escape_string($koneksi, $_POST['nama_lengkap']);
-    $kelas = intval($_POST['id_kelas']);
-    $tgl_masuk = $_POST['tanggal_masuk'];
+    try {
+        $nis = mysqli_real_escape_string($koneksi, $_POST['nis']);
+        $nama = mysqli_real_escape_string($koneksi, $_POST['nama_lengkap']);
+        $kelas = intval($_POST['id_kelas']);
+        $tgl_masuk = $_POST['tanggal_masuk'];
 
-    $query = "INSERT INTO santri (nis, nama_lengkap, id_kelas, tanggal_masuk, status) VALUES ('$nis', '$nama', '$kelas', '$tgl_masuk', 'aktif')";
-    if (mysqli_query($koneksi, $query)) {
+        $cek_nis = mysqli_query($koneksi, "SELECT * FROM santri WHERE nis = '$nis'");
+        if (mysqli_num_rows($cek_nis) > 0) {
+            throw new Exception("Nomor Induk Santri (NIS) '$nis' sudah terdaftar di sistem.");
+        }
+
+        $query = "INSERT INTO santri (nis, nama_lengkap, id_kelas, tanggal_masuk, status) VALUES ('$nis', '$nama', '$kelas', '$tgl_masuk', 'aktif')";
+        if (!mysqli_query($koneksi, $query)) {
+            throw new Exception("Gagal menyimpan ke database: " . mysqli_error($koneksi));
+        }
+
         $pesan = "Data santri berhasil ditambahkan!";
-    } else {
-        $error = "Gagal menambah santri: " . mysqli_error($koneksi);
+    } catch (Exception $e) {
+        $error = $e->getMessage();
     }
 }
 
-// Ambil data kelas untuk pilihan dropdown
-$kelas_result = mysqli_query($koneksi, "SELECT * FROM kelas");
+// Proses Edit Santri
+if (isset($_POST['edit_santri'])) {
+    try {
+        $id = intval($_POST['id']);
+        $nis = mysqli_real_escape_string($koneksi, $_POST['nis']);
+        $nama = mysqli_real_escape_string($koneksi, $_POST['nama_lengkap']);
+        $kelas = intval($_POST['id_kelas']);
+        $status = mysqli_real_escape_string($koneksi, $_POST['status']);
 
-// Ambil data santri beserta nama kelasnya
+        // Cek duplikasi NIS jika NIS diubah
+        $cek_nis = mysqli_query($koneksi, "SELECT * FROM santri WHERE nis = '$nis' AND id != $id");
+        if (mysqli_num_rows($cek_nis) > 0) {
+            throw new Exception("NIS '$nis' sudah digunakan oleh santri lain.");
+        }
+
+        $query = "UPDATE santri SET nis = '$nis', nama_lengkap = '$nama', id_kelas = $kelas, status = '$status' WHERE id = $id";
+        if (!mysqli_query($koneksi, $query)) {
+            throw new Exception("Gagal memperbarui data santri.");
+        }
+
+        $pesan = "Data santri berhasil diperbarui!";
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
+// Proses Hapus Santri
+if (isset($_GET['hapus'])) {
+    try {
+        $id_santri = intval($_GET['hapus']);
+        $hapus_query = mysqli_query($koneksi, "DELETE FROM santri WHERE id = $id_santri");
+        if (!$hapus_query) {
+            throw new Exception("Gagal menghapus data santri.");
+        }
+        header("Location: data_santri.php");
+        exit;
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
+$kelas_result = mysqli_query($koneksi, "SELECT * FROM kelas");
 $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s LEFT JOIN kelas k ON s.id_kelas = k.id ORDER BY s.id DESC");
 ?>
 
@@ -65,7 +112,6 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             color: var(--text-main);
         }
 
-        /* Overlay Sidebar HP */
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -81,7 +127,6 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             display: block;
         }
 
-        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
@@ -92,6 +137,7 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             transition: transform 0.3s ease-in-out;
             z-index: 100;
             height: 100%;
+            flex-shrink: 0;
         }
 
         .sidebar-brand {
@@ -159,13 +205,15 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             background: rgba(229, 62, 62, 0.08);
         }
 
-        /* Konten Utama */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            overflow-x: hidden;
             background: var(--bg-main);
+            width: 100%;
+            max-width: 100vw;
         }
 
         .top-header {
@@ -215,13 +263,21 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
 
         .dashboard-body {
             padding: 10px 30px 30px 30px;
+            max-width: 100%;
         }
 
-        /* Grid Bagian Form dan Tabel */
         .grid-section {
             display: grid;
             grid-template-columns: 350px 1fr;
             gap: 25px;
+            align-items: start;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
         }
 
         .card-box {
@@ -229,7 +285,9 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             padding: 25px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-            height: fit-content;
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .card-box h3 {
@@ -281,10 +339,7 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             box-shadow: 0 4px 15px rgba(0, 180, 216, 0.3);
             transition: opacity 0.2s;
         }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
+        .btn-primary:hover { opacity: 0.9; }
 
         .alert-success {
             background: #c6f6d5;
@@ -304,8 +359,15 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             margin-bottom: 15px;
         }
 
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         table {
             width: 100%;
+            min-width: 550px;
             border-collapse: collapse;
             font-size: 13px;
         }
@@ -314,6 +376,7 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             padding: 12px 14px;
             text-align: left;
             border-bottom: 1px solid #edf2f7;
+            white-space: nowrap;
         }
 
         table th {
@@ -338,25 +401,67 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             font-weight: 700;
         }
 
-        /* Responsif HP */
+        .btn-action-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-edit {
+            background: #feebc8;
+            color: #9c4221;
+            padding: 5px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-edit:hover { background: #fde68a; }
+
+        .btn-danger {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 5px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .btn-danger:hover { background: #feb2b2; }
+
+        /* Modal Popup Edit */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
         @media (max-width: 900px) {
-            .grid-section {
-                grid-template-columns: 1fr;
-            }
+            .grid-section { grid-template-columns: 1fr; }
             .sidebar {
                 position: fixed;
-                left: 0;
-                top: 0;
-                height: 100%;
+                left: 0; top: 0; height: 100%;
                 transform: translateX(-100%);
                 box-shadow: 5px 0 25px rgba(0,0,0,0.1);
             }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .close-sidebar-btn {
-                display: block;
-            }
+            .sidebar.active { transform: translateX(0); }
+            .close-sidebar-btn { display: block; }
+            .dashboard-body { padding: 10px 15px 30px 15px; }
         }
     </style>
 </head>
@@ -402,39 +507,54 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
             <?php endif; ?>
 
             <div class="grid-section">
-                <!-- Kolom Kiri: Form Tambah Santri -->
-                <div class="card-box">
-                    <h3>Tambah Santri Baru</h3>
-                    <form action="" method="POST">
-                        <div class="form-group">
-                            <label>NIS</label>
-                            <input type="text" name="nis" placeholder="Nomor Induk Santri..." required autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label>Nama Lengkap</label>
-                            <input type="text" name="nama_lengkap" placeholder="Nama lengkap santri..." required autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label>Kelas</label>
-                            <select name="id_kelas" required>
-                                <option value="">-- Pilih Kelas --</option>
-                                <?php while ($k = mysqli_fetch_assoc($kelas_result)): ?>
-                                    <option value="<?= $k['id']; ?>"><?= htmlspecialchars($k['nama_kelas']); ?></option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Tanggal Masuk</label>
-                            <input type="date" name="tanggal_masuk" value="<?= date('Y-m-d'); ?>" required>
-                        </div>
-                        <button type="submit" name="tambah_santri" class="btn-primary">Simpan Santri</button>
-                    </form>
+                <!-- Kolom Kiri: Form Tambah & Import -->
+                <div class="left-column">
+                    <div class="card-box">
+                        <h3>Tambah Santri Baru</h3>
+                        <form action="" method="POST">
+                            <div class="form-group">
+                                <label>NIS</label>
+                                <input type="text" name="nis" placeholder="Nomor Induk Santri..." required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label>Nama Lengkap</label>
+                                <input type="text" name="nama_lengkap" placeholder="Nama lengkap santri..." required autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label>Kelas</label>
+                                <select name="id_kelas" required>
+                                    <option value="">-- Pilih Kelas --</option>
+                                    <?php 
+                                    mysqli_data_seek($kelas_result, 0);
+                                    while ($k = mysqli_fetch_assoc($kelas_result)): 
+                                    ?>
+                                        <option value="<?= $k['id']; ?>"><?= htmlspecialchars($k['nama_kelas']); ?></option>
+                                    <?php endwhile; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Tanggal Masuk</label>
+                                <input type="date" name="tanggal_masuk" value="<?= date('Y-m-d'); ?>" required>
+                            </div>
+                            <button type="submit" name="tambah_santri" class="btn-primary">Simpan Santri</button>
+                        </form>
+                    </div>
+
+                    <div class="card-box">
+                        <h3>Import Data Excel / CSV</h3>
+                        <form action="import_santri.php" method="POST" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <input type="file" name="file_excel" accept=".csv, .xlsx" required style="padding: 8px; font-size: 12px;">
+                            </div>
+                            <button type="submit" name="import" class="btn-primary" style="background: linear-gradient(135deg, #38a169, #276749);">Upload & Import</button>
+                        </form>
+                    </div>
                 </div>
 
-                <!-- Kolom Kanan: Tabel Daftar Santri -->
+                <!-- Kolom Kanan: Tabel Data Santri -->
                 <div class="card-box">
                     <h3>Daftar Seluruh Santri Aktif</h3>
-                    <div style="overflow-x: auto;">
+                    <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
@@ -443,6 +563,7 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
                                     <th>Nama Santri</th>
                                     <th>Kelas</th>
                                     <th>Status</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -451,8 +572,14 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
                                     <td><?= $no++; ?></td>
                                     <td><?= htmlspecialchars($s['nis']); ?></td>
                                     <td><?= htmlspecialchars($s['nama_lengkap']); ?></td>
-                                    <td><?= htmlspecialchars($s['nama_kelas'] ?? 'Belum ada kelas'); ?></td>
+                                    <td><?= htmlspecialchars($s['nama_kelas'] ?? 'Belum ada'); ?></td>
                                     <td><span class="badge-aktif"><?= ucfirst($s['status']); ?></span></td>
+                                    <td>
+                                        <div class="btn-action-group">
+                                            <button class="btn-edit" onclick="bukaModalEdit('<?= $s['id']; ?>', '<?= htmlspecialchars($s['nis'], ENT_QUOTES); ?>', '<?= htmlspecialchars($s['nama_lengkap'], ENT_QUOTES); ?>', '<?= $s['id_kelas']; ?>', '<?= $s['status']; ?>')">Edit</button>
+                                            <a href="data_santri.php?hapus=<?= $s['id']; ?>" class="btn-danger" onclick="return confirm('Yakin ingin menghapus data santri ini?')">Hapus</a>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <?php endwhile; ?>
                             </tbody>
@@ -464,13 +591,67 @@ $santri_result = mysqli_query($koneksi, "SELECT s.*, k.nama_kelas FROM santri s 
         </div>
     </div>
 
+    <!-- Modal Form Edit Santri -->
+    <div class="modal" id="modalEdit">
+        <div class="modal-content">
+            <h3>Edit Data Santri</h3>
+            <form action="" method="POST">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="form-group">
+                    <label>NIS</label>
+                    <input type="text" name="nis" id="edit_nis" required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" name="nama_lengkap" id="edit_nama" required>
+                </div>
+                <div class="form-group">
+                    <label>Kelas</label>
+                    <select name="id_kelas" id="edit_kelas" required>
+                        <option value="">-- Pilih Kelas --</option>
+                        <?php 
+                        mysqli_data_seek($kelas_result, 0);
+                        while ($k = mysqli_fetch_assoc($kelas_result)): 
+                        ?>
+                            <option value="<?= $k['id']; ?>"><?= htmlspecialchars($k['nama_kelas']); ?></option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status" id="edit_status" required>
+                        <option value="aktif">Aktif</option>
+                        <option value="keluar">Keluar</option>
+                        <option value="lulus">Lulus</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" name="edit_santri" class="btn-primary">Simpan Perubahan</button>
+                    <button type="button" class="btn-primary" style="background: #718096;" onclick="tutupModalEdit()">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-            
             sidebar.classList.toggle('active');
             overlay.classList.toggle('active');
+        }
+
+        function bukaModalEdit(id, nis, nama, id_kelas, status) {
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_nis').value = nis;
+            document.getElementById('edit_nama').value = nama;
+            document.getElementById('edit_kelas').value = id_kelas;
+            document.getElementById('edit_status').value = status;
+            document.getElementById('modalEdit').classList.add('active');
+        }
+
+        function tutupModalEdit() {
+            document.getElementById('modalEdit').classList.remove('active');
         }
     </script>
 
